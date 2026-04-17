@@ -1,19 +1,18 @@
 module.exports = app => {
-    const todos = require("../controllers/todo.controller");
-    var router = require("express").Router();
+  const todos = require("../controllers/todo.controller");
+  var router = require("express").Router();
 
-    router.post("/", todos.create);
+  const auth = require("../middleware/auth");
 
-    router.get("/", todos.findAll)
+  router.post("/", auth, todos.create);
 
-    router.delete("/", todos.deleteAll);
+  router.get("/", auth, todos.findAll);
 
-    router.get("/:id", todos.findOne);
+  router.get("/:id", auth, todos.findOne);
 
-    router.delete("/:id", todos.delete);
+  router.put("/:id", auth, todos.update);
 
-    router.put("/:id", todos.update);
+  router.delete("/:id", auth, todos.delete);
 
-    app.use('/api/todos', router);
-
+  app.use('/api/todos', router);
 };

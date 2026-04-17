@@ -1,25 +1,20 @@
 const db = require("../models");
 const Todo = db.todo;
 
-// create todo
-
 exports.create = (req, res) => {
   if (!req.body.title) {
-    res.status(400).send({ message: "Content can not be empty" });
-    return;
+    return res.status(400).send({ message: "Content can not be empty" });
   }
 
   const todo = new Todo({
     title: req.body.title,
     description: req.body.description,
-    completed: req.body.completed || false
+    completed: req.body.completed || false,
+    userId: req.userId   // 🔥 IMPORTANT
   });
 
-  todo
-    .save()
-    .then(data => {
-      res.send(data);
-    })
+  todo.save()
+    .then(data => res.send(data))
     .catch(err => {
       res.status(500).send({
         message: err.message || "Some error occurred"
@@ -28,93 +23,73 @@ exports.create = (req, res) => {
 };
 
 
-// get all todos
-
 exports.findAll = (req, res) => {
   const title = req.query.title;
-  var condition = title ? { title: { $regex: new RegExp(title), $options: "i" } } : {};
+
+  let condition = {
+    userId: req.userId   
+  };
+
+  if (title) {
+    condition.title = { $regex: new RegExp(title), $options: "i" };
+  }
 
   Todo.find(condition)
-    .then(data => {
-      res.send(data);
-    })
+    .then(data => res.send(data))
     .catch(err => {
-      res.status(500).send({ message: err.message || " Some err occured" });
+      res.status(500).send({
+        message: err.message || "Error fetching todos"
+      });
     });
-
 };
 
-// ge 
 
 exports.findOne = (req, res) => {
   const id = req.params.id;
-  Todo.findById(id)
+
+  Todo.findOne({ _id: id, userId: req.userId }) 
     .then(data => {
       if (!data)
-        res.status(404).send({ message: "Not found todo with id " + id });
-      else res.send(data);
+        return res.status(404).send({ message: "Todo not found" });
+      res.send(data);
     })
     .catch(err => {
-      res.status(500).send({ message: "Error retrieving todo with id=" + id });
+      res.status(500).send({ message: "Error retrieving todo" });
     });
 };
 
-exports.deleteAll = (req, res) => {
-  Todo.deleteMany({})
+
+exports.update = (req, res) => {
+  const id = req.params.id;
+
+  Todo.findOneAndUpdate(
+    { _id: id, userId: req.userId }, 
+    req.body,
+    { new: true }
+  )
     .then(data => {
-      res.send({
-        message: `${data.deletedCount} Todos were deleted successfully`
-      });
+      if (!data)
+        return res.status(404).send({ message: "Todo not found" });
+
+      res.send({ message: "Todo updated successfully" });
     })
     .catch(err => {
-      res.status(500).send({
-        message: err.message || "Some err occurred"
-      });
+      res.status(500).send({ message: "Error updating todo" });
     });
 };
+
 
 exports.delete = (req, res) => {
   const id = req.params.id;
 
-  Todo.findByIdAndDelete(id)
+  Todo.findOneAndDelete({ _id: id, userId: req.userId }) 
     .then(data => {
-      if (!data) {
-        res.status(404).send({
-          message: `Cannot delete todo with id=${id}. Maybe Todo was not found`
-        });
-      } else {
-        res.send({
-          message: "Todo was deleted successfully"
-        });
-      }
+      if (!data)
+        return res.status(404).send({ message: "Todo not found" });
+
+      res.send({ message: "Todo deleted successfully" });
     })
     .catch(err => {
-      res.status(500).send({
-        message: "Could not delete Todo With id=" + id
-      });
-    });
-};
-
-exports.update = (req, res) => {
-  if (!req.body) {
-    return res.status(400).send({
-      message: "Data to update can not be empty!"
-    });
-  }
-
-  const id = req.params.id;
-
-  Todo.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
-    .then(data => {
-      if (!data) {
-        res.status(404).send({
-          message: `Cannot update Todo with id=${id}. Maybe Todo was not found!`
-        });
-      } else res.send({ message: "Todo was updated successfully." });
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Error updating Todo with id=" + id
-      });
+      res.status(500).send({ message: "Error deleting todo" });
     });
 };

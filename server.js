@@ -20,8 +20,7 @@ const db = require("./models");
 
 db.mongoose
     .connect(db.url, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true
+        
     })
     .then(() => {
         console.log("connected to the database");
@@ -31,13 +30,13 @@ db.mongoose
         process.exit();
     });
 
-// Test route
 
 app.get("/", (req, res) => {
     res.send("Todo backend is working");
 });
 
 require("./routes/todo.routes")(app);
+app.use("/api/auth", require("./routes/auth.routes"));
 
 const PORT = process.env.PORT || 4000;
 

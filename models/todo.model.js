@@ -5,7 +5,8 @@ module.exports = mongoose => {
             {
                 title: String,
                 description: String,
-                completed: Boolean
+                completed: Boolean,
+                userId: String
             },
             {timestamps: true}
         )
